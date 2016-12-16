@@ -1,0 +1,32 @@
+一、程序创建的流程：
+if __name__ = '__main__':
+1.app = wx.App() #创建wx应用程序对象
+2.frame =  PaintFrame() #创建PaintFrame对象（调用构造函数）
+	1.1 调用父类wx.Frame.__init__()初始化父对象
+	1.2 初始化工作资源
+		1.2.1 创造画笔
+		1.2.2 申请存放绘制线条的list对象self.lines
+		1.2.3 初始化设备上下文对象self.InitBuffer()
+			要在图像上作画，self.buffer = wx.EmptyBitmap()
+			dc = wx.BufferedDC(None, self.buffer)
+		1.2.4 初始化菜单栏self.InitUI()
+		1.2.5 绑定窗口要处理的事件及其响应函数
+			self.Bind(wx.EVT_LEFT_DOWN, self.OnLeftDown)
+			...
+3.frame.show() #显示窗口对象,show()函数继承自基类wx.Window
+4.app.loop() #进入消息循环
+
+二、鼠标绘图的流程：
+1.鼠标左键按下OnLeftDown() #wx.EVT_LEFT_DOWN，表示开始一次绘制
+	event.GetPositionTuple() #获取当前位置
+	self.CaptureMouse() #捕获鼠标轨迹
+2.鼠标左键弹起OnLeftUp() #wx.EVT_LEFT_UP,表示结束一次绘制
+	记录捕获鼠标轨迹期间所有线段(self.curLine)存入self.lines(注：鼠标轨迹实际上由若干首尾相连的线段模拟)
+	self.ReleaseMouse() #释放鼠表捕获
+3.鼠标移动期间绘制鼠表轨迹OnMotion() #wx.EVT_MOTION
+	如果现在同时处于鼠标左键按下且鼠标轨迹捕获状态则执行
+		绘制当前轨迹
+			保存当前鼠标位置
+			保存[前时刻鼠标位置，当前鼠标位置]到self.curLine list对象中 
+			绘制前时刻鼠标位置->当前鼠标位置的直线
+		event.Skip()#继续优先且不遗漏处理wx.EVT_MOTION事件，直到释放鼠标捕获	
