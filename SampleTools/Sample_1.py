@@ -20,12 +20,13 @@ class Frame(wx.Frame):
 
         wx.Frame.__init__(self, parent, id, title, pos, size=(400, 400))
 
-        self.InitUI()
-        self.InitDrawTools()
-
         self.PositiveSampleRect = [[None, None]]
         self.NegativeSampleRect = [[None, None]]
         self.CurrentBmpPosition = [0, 0]
+        self.ImgPathsManager = {'index': -1, 'Paths': []}
+
+        self.InitUI()
+        self.InitDrawTools()
 
         # # 绑定鼠标在图片上的操作事件响应函数
         # self.ImgWin.Bind(wx.EVT_LEFT_DOWN, self.On_Mouse_Left_Down)
@@ -38,6 +39,7 @@ class Frame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.On_Menu_Open, self.menuItemOpen)
         self.Bind(wx.EVT_MENU, self.On_Menu_Save, self.menuItemSave)
         self.Bind(wx.EVT_MENU, self.On_Menu_Next, self.menuItemNext)
+        self.Bind(wx.EVT_MENU, self.On_Menu_Prior, self.menuItemPrior)
         self.Bind(wx.EVT_MENU, self.On_Menu_Screenshot, self.menuItemScreenshotWindow)
         self.Bind(wx.EVT_MENU, self.On_Menu_DirectDraw, self.menuItemDirectDraw)
         self.Bind(wx.EVT_MENU, self.On_Menu_Close, self.menuItemClose)
@@ -56,8 +58,8 @@ class Frame(wx.Frame):
         self.slider.SetTickFreq(1, 1)
 
         # 添加滑动栏，主要解决显示大图的问题
-        sliderSize = self.slider.GetClientSize()
-        self.scroller = wx.ScrolledWindow(self, -1, pos=(0, sliderSize.y))
+        # sliderSize = self.slider.GetClientSize()
+        self.scroller = wx.ScrolledWindow(self, -1, pos=(0, self.slider.GetClientSize().y))
 
         #添加菜单栏
         menubar = wx.MenuBar()
@@ -65,6 +67,7 @@ class Frame(wx.Frame):
         self.menuItemOpen = menuFile.Append(-1, '&Open')
         self.menuItemSave = menuFile.Append(-1, "&Save")
         self.menuItemNext = menuFile.Append(-1, "&Next")
+        self.menuItemPrior = menuFile.Append(-1, "&Prior")
         self.menuItemScreenshotWindow = menuFile.Append(-1, "&Screenshot Window")
         self.menuItemDirectDraw = menuFile.Append(-1, "&Direct Draw")
         self.menuItemClose = menuFile.Append(-1, "&Close")
@@ -105,17 +108,16 @@ class Frame(wx.Frame):
     #     #self.scroller.Refresh()
 
     def ResizeWindowByBmp(self):
-        TileSize_y = self.GetSize()[1]-self.GetClientSize()[1]
+        self.TileSize_y = TileSize_y = self.GetSize()[1]-self.GetClientSize()[1]
         # 获取图片大小,同时作为Frame的大小
-        self.BmpSize = size = self.Bmp.GetWidth(), self.Bmp.GetHeight()
-        sliderSize = self.slider.GetClientSize()
+        self.BmpSize = self.Bmp.GetWidth(), self.Bmp.GetHeight()
 
         # 创建静态位图窗口
         self.ImgWin.SetBitmap(self.Bmp)
         # 设置窗口的最大大小
-        self.SetMaxSize([size[0], size[1] + sliderSize[1]+TileSize_y])
+        self.SetMaxClientSize([self.BmpSize[0], self.BmpSize[1] + self.scroller.GetSize()[1]])
         # 设置滑动条尺寸
-        self.scroller.SetScrollbars(1, 1, size[0], size[1])
+        self.scroller.SetScrollbars(1, 1, self.BmpSize[0], self.BmpSize[1])
 
     def LoadImage(self):
         self.image = wx.Image(self.currentBmpPath, wx.BITMAP_TYPE_ANY)
@@ -183,19 +185,22 @@ class Frame(wx.Frame):
     def On_Menu_Open(self, event):
         dlg = wx.FileDialog(self, defaultDir="/home/yangzheng/myDataset", style=wx.DEFAULT_DIALOG_STYLE|wx.FD_MULTIPLE|wx.FD_OPEN)
         if dlg.ShowModal() == wx.ID_OK:
-            self.ImgPaths = dlg.GetPaths()
+            self.ImgPathsManager['Paths'] = dlg.GetPaths()
+            self.ImgPathsManager['Index'] = -1
             # print self.ImgPaths
             dlg.Close()
             # print self.ImgPaths
-        if len(self.ImgPaths) <= 0:
+        if len(self.ImgPathsManager['Paths']) <= 0:
             pass
         else:
             try:
                 del self.Bmp
             except AttributeError, err:
                 print "There have no Bitmap file currently!"
-            self.currentBmpPath = self.ImgPaths.pop(0)
+            self.ImgPathsManager['Index'] += 1
+            self.currentBmpPath = self.ImgPathsManager['Paths'][self.ImgPathsManager['Index']]
             # print self.currentBmpPath
+            # create sample directory
             splitPath = os.path.split(self.currentBmpPath)
             self.BmpDirPath = os.path.join(splitPath[0], u'sample')
             if not os.path.isdir(self.BmpDirPath):
@@ -209,15 +214,32 @@ class Frame(wx.Frame):
             # self.image.Rescale(200, 200)
             self.ResizeWindowByBmp()
 
-    def On_Menu_Next(self, event):
-        if len(self.ImgPaths) <= 0:
+    def On_Menu_Next(self, event=None):
+        if len(self.ImgPathsManager['Paths']) <= self.ImgPathsManager['Index']+1:
             print "Have no next bitmap file!"
         else:
             try:
                 del self.Bmp
             except AttributeError, err:
                 print "There have no Bitmap file currently!"
-            self.currentBmpPath = self.ImgPaths.pop(0)
+
+            self.ImgPathsManager['Index'] += 1
+            self.currentBmpPath = self.ImgPathsManager['Paths'][self.ImgPathsManager['Index']]
+            self.LoadImage()
+            # self.Bmp = self.image.ConvertToBitmap()
+            self.ResizeWindowByBmp()
+
+    def On_Menu_Prior(self, event=None):
+        if self.ImgPathsManager['Index'] <= 0:
+            print "Have no prior bitmap file!"
+        else:
+            try:
+                del self.Bmp
+            except AttributeError, err:
+                print "There have no Bitmap file currently!"
+
+            self.ImgPathsManager['Index'] -= 1
+            self.currentBmpPath = self.ImgPathsManager['Paths'][self.ImgPathsManager['Index']]
             self.LoadImage()
             # self.Bmp = self.image.ConvertToBitmap()
             self.ResizeWindowByBmp()
@@ -231,12 +253,11 @@ class Frame(wx.Frame):
 
     def On_Menu_Screenshot(self, event):
         # print repr(self)
-        self.slider_screenshotFrameSizer = wx.Slider(self, -1, 10, 0, 20, pos=(0, self.slider.GetSize()[1]),size = (100,70),
+        self.slider_screenshotFrameSizer = wx.Slider(self, -1, 10, 0, 20, pos=(self.GetClientSize()[0]/2, 0),
                            style=wx.SL_HORIZONTAL |wx.SL_LABELS)
-        print self.slider.GetSize()[1] + self.slider_screenshotFrameSizer.GetSize()[1]
-        self.scroller.SetPosition(wx.Point(0, (self.slider.GetSize()[1] + self.slider_screenshotFrameSizer.GetSize()[1])))
-        self.scroller.SetSize((self.scroller.GetSize()[0], self.scroller.GetSize()[1]-self.slider_screenshotFrameSizer.GetSize()[1]))
+        # print self.slider.GetSize()[1] + self.slider_screenshotFrameSizer.GetSize()[1]
         self.slider.SetTickFreq(1, 1)
+        self.SetMaxClientSize((self.BmpSize[0], self.slider.GetSize()[1]+self.BmpSize[1]))
         self.Refresh(False)
         self.screenshotFrame = CopyFrame(parent=self, Pos=self.scroller.GetScreenPosition())
         self.screenshotFrame.Show()
@@ -253,12 +274,17 @@ class Frame(wx.Frame):
     def On_Window_Resize(self, event):
         winSize = self.GetClientSize()
         sliderSize = self.slider.GetClientSize()
-        sliderSize.x = winSize.x
+        sliderSize.x = winSize.x/2
         # print repr(sliderSize)
         self.slider.SetSize(sliderSize)
+        try:
+            self.slider_screenshotFrameSizer.SetPosition((winSize.x/2 ,0))
+            self.slider_screenshotFrameSizer.SetSize(sliderSize)
+        except AttributeError, err:
+            pass
         self.scroller.SetSize(wx.Size(winSize.x, winSize.y-sliderSize.y))
 
-    def On_Menu_Close(self):
+    def On_Menu_Close(self, event):
         pass
 
     def On_Slider_Motion(self, event):
@@ -314,10 +340,10 @@ class CopyFrame(wx.Frame):
         self.frameSize = wx.Size(50, 50)
         if Pos == None:
             t_pos = parent.scroller.GetScreenPosition()
-            wx.Frame.__init__(self, parent, wx.NewId(), pos=t_pos, size=self.frameSize,
+            wx.Frame.__init__(self, None, wx.NewId(), pos=t_pos, size=self.frameSize,
                               style=wx.NO_BORDER | wx.STAY_ON_TOP)
         else:
-            wx.Frame.__init__(self, parent, wx.NewId(), pos=Pos, size=self.frameSize,
+            wx.Frame.__init__(self, None, wx.NewId(), pos=Pos, size=self.frameSize,
                               style=wx.NO_BORDER | wx.STAY_ON_TOP)
 
         self.SetBackgroundColour(wx.Colour(0, 0, 0, wx.ALPHA_TRANSPARENT))
@@ -337,6 +363,10 @@ class CopyFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.On_MenuClose_Down, self.MenuItemClose)
         self.Bind(wx.EVT_MENU, self.On_MenuResize_Down, self.MenuItemResize)
         self.Bind(wx.EVT_IDLE, self.On_Idle)
+        self.Bind(wx.EVT_KEY_DOWN, self.On_Key_Down)
+
+    def __del__(self):
+        pass
 
     def InitUI(self):
         self.popMenu = wx.Menu()
@@ -392,7 +422,7 @@ class CopyFrame(wx.Frame):
         image.SaveFile(imageFimeName, wx.BITMAP_TYPE_JPEG)
 
     def On_MenuClose_Down(self, event):
-        self.Destroy()
+        self.Close(True)
 
     def On_MenuResize_Down(self, event):
         reSizeDlg = ReSizeDlg(self)
@@ -424,7 +454,13 @@ class CopyFrame(wx.Frame):
             self.refreshFlag = False
         event.Skip()
 
-
+    def On_Key_Down(self, event):
+        keycode = event.GetKeyCode()
+        print type(keycode), ':', chr(keycode)
+        if chr(keycode) == 'E':
+            self.parentWin.On_Menu_Next()
+        elif chr(keycode) == 'Q':
+            self.parentWin.On_Menu_Prior()
 
 
 class App(wx.App):
