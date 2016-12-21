@@ -4,7 +4,7 @@
 """
 Hello,wxPython! program.
 @Author: YangZheng, UESTC
-@Functions: Sample training set from loading images
+@Functions: Sample training set from loading images.
 """
 
 import wx
