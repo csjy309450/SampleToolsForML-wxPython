@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 
 '''
-    Function:绘图
-    Input：NONE
-    Output: NONE
-    author: YangZheng
-    date:2016-12-15
+@Function:绘图
+@Input：NONE
+@Output: NONE
+@author: YangZheng
+@date:2016-12-15
 '''
 
 import wx
