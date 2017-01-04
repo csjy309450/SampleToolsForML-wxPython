@@ -36,7 +36,7 @@ class DocManager:
 
     def __dirSearch(self, dirPath, nRetract=0):
         """
-        文件夹搜索
+        文件夹遍历
         :param dirPath: 文件夹路径
         :param nRetract: 文件缩进级别，用于判断文件的父目录
         :return:
@@ -62,9 +62,9 @@ class DocManager:
 
     def __dirSearch2(self, dirPath, deep=0):
         """
-        文件夹搜索
+        根据深度deep搜索文件夹文件
         :param dirPath: 文件夹路径
-        :param nRetract: 文件缩进级别，用于判断文件的父目录
+        :param deep: 文件夹搜索深度
         :return:
         """
         dirHaveRightDoc = False
@@ -105,7 +105,41 @@ class DocManager:
                 reprStr += '|' * (t_file[1]) + t_file[0] + '\n'
         return reprStr
 
-    def DirectoriesMerge(self, srcPaths, tarPath, newFilter=None, _startNum=0):
+    def IntToSeqNum(self, _int, _order):
+        """
+        将数字序号转化成字符系列，且保持字符序列长度相同（不够的补零）
+        :param _int[int] 数字序列
+        :param _order[int] 规定字符序列的长度
+        :return[string]
+        """
+        order = 1
+        strNum = str(_int)
+        while order <= _order:
+            if _int < pow(10, order):
+                strNum = (_order-order)*'0' + str(_int)
+                break
+            order+=1
+
+        return strNum
+        # if _int < 10:
+        #     strNum = '000' + str(_int)
+        # elif _int < 100:
+        #     strNum = '00' + str(_int)
+        # elif _int < 1000:
+        #     strNum = '0' + str(_int)
+        # else:
+        #     strNum = '0' + str(_int)
+
+    def DirectoriesMerge(self, srcPaths, tarPath, newFilter=None, _startNum=0, _order=5):
+        """
+        合并多文件中的文件到指定文件夹下
+        :param srcPaths:
+        :param tarPath:
+        :param newFilter:
+        :param _startNum: 指定文件名的起始序列
+        :param _order: 指定文件名数字序列的长度
+        :return:
+        """
         import shutil
         if newFilter != None:
             self.docFilter = newFilter
@@ -120,37 +154,17 @@ class DocManager:
                     # shutil.copy()
                     t_filePath = os.path.join(srcPath, t_file)
                     shutil.copy(t_filePath, tarPath)
-                    os.rename(os.path.join(tarPath, t_file), os.path.join(tarPath, 't_' + str(startNum) + os.path.splitext(t_file)[1]))
+                    strNum = self.IntToSeqNum(startNum, _order)
+                    os.rename(os.path.join(tarPath, t_file), os.path.join(tarPath, strNum + '_t' + os.path.splitext(t_file)[1]))
                     startNum += 1
 
+
 def main():
-    docman = DocManager("/home/yangzheng/testData/ucsd/vidf1_33_000.y/sample", ['.jpg'])
-    # docman.GetDocList()
-    # print repr(docman)
-    mergeDirs = [
-        "/home/yangzheng/testData/ucsd/vidf1_33_000.y/sample",
-        "/home/yangzheng/testData/ucsd/vidf1_33_001.y/sample",
-        "/home/yangzheng/testData/ucsd/vidf1_33_002.y/sample",
-        "/home/yangzheng/testData/ucsd/vidf1_33_003.y/sample",
-        "/home/yangzheng/testData/ucsd/vidf1_33_004.y/sample",
-        "/home/yangzheng/testData/ucsd/vidf1_33_005.y/sample",
-        "/home/yangzheng/testData/ucsd/vidf1_33_006.y/sample",
-        "/home/yangzheng/testData/ucsd/vidf1_33_007.y/sample",
-        "/home/yangzheng/testData/ucsd/vidf1_33_008.y/sample",
-        "/home/yangzheng/testData/ucsd/vidf1_33_009.y/sample",
-        "/home/yangzheng/testData/ucsd/vidf1_33_010.y/sample",
-        "/home/yangzheng/testData/ucsd/vidf1_33_011.y/sample",
-        "/home/yangzheng/testData/ucsd/vidf1_33_012.y/sample",
-        "/home/yangzheng/testData/ucsd/vidf1_33_013.y/sample",
-        "/home/yangzheng/testData/ucsd/vidf1_33_014.y/sample",
-        "/home/yangzheng/testData/ucsd/vidf1_33_015.y/sample",
-        "/home/yangzheng/testData/ucsd/vidf1_33_016.y/sample",
-        "/home/yangzheng/testData/ucsd/vidf1_33_017.y/sample",
-        "/home/yangzheng/testData/ucsd/vidf1_33_018.y/sample",
-        "/home/yangzheng/testData/ucsd/vidf1_33_019.y/sample",
-        "/home/yangzheng/testData/ucsd/vidf1_33_020.y/sample"
-    ]
-    docman.DirectoriesMerge(mergeDirs, "/home/yangzheng/testData/ucsd/body")
+    DM = DocManager(['.jpg'])
+    # DM.GetDirTree('/home/yangzheng/testData/BodyDataset/training')
+    # DM.docList.sort(cmp=lambda x, y: cmp(x, y))
+    print DM.IntToSeqNum(11, 6)
+    pass
 
 if __name__ == "__main__":
     main()
