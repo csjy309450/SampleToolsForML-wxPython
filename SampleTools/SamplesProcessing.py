@@ -65,7 +65,12 @@ def ImageReshaping(dirPath, sampleDirName, newShape):
         cv2.imwrite(os.path.join(sampleDir, str(SequenceNum) + '.jpg'), tar_img)
         SequenceNum += 1
 
-def MakeSamplesText(dirPath, txtName, _labelFlag):
+"""产生文件的类型"""
+TEXT_ONE_ABSPATH = 0
+TEXT_ONE_RELATIVEPATH = 1
+TEXT_TWO_ABSPATH = 2
+TEXT_TWO_RELATIVEPATH = 3
+def MakeSamplesText(dirPath, txtName, _labelFlag, _testType=TEXT_ONE_ABSPATH):
     """
     将样本集用txt文档描述，格式为
         /PATH/cat0.jpg 0
@@ -86,18 +91,47 @@ def MakeSamplesText(dirPath, txtName, _labelFlag):
     DM.ResetFilter(['.jpg'])
     DM.GetDirTree(dirPath)
     DM.docList.sort()
+    
+    if _testType == TEXT_ONE_ABSPATH or _testType == TEXT_ONE_RELATIVEPATH:
+        f = open(os.path.join(dirPath, txtName+'.txt'), 'w')
+        indx = 0
+        kind = 0
+        print len(DM.docList)
+        while indx < len(DM.docList):
+            t_str = ''
+            if _testType == TEXT_ONE_ABSPATH:
+                t_str = os.path.join(dirPath, DM.docList[indx]) + ' ' + str(_labelFlag[kind][0]) + '\n'
+            elif _testType == TEXT_ONE_RELATIVEPATH:
+                t_str = DM.docList[indx] + ' ' + str(_labelFlag[kind][0]) + '\n'
+            f.write(t_str)
+            if indx + 1 == _labelFlag[kind][1]:
+                kind += 1
+            indx += 1
+    elif _testType == TEXT_TWO_ABSPATH or _testType == TEXT_TWO_RELATIVEPATH:
+        f_imgs = open(os.path.join(dirPath, txtName+'_images.txt'), 'w')
+        f_labels = open(os.path.join(dirPath, txtName + '_labels.txt'), 'w')
+        indx = 0
+        kind = 0
+        print len(DM.docList)
+        while indx < len(DM.docList):
+            str_imgs = ''
+            str_labels = ''
+            if _testType == TEXT_TWO_ABSPATH:
+                str_imgs = os.path.join(dirPath, DM.docList[indx]) + '\n'
+                str_labels = str(_labelFlag[kind][0]) + '\n'
+            elif _testType == TEXT_TWO_RELATIVEPATH:
+                str_imgs = DM.docList[indx] + '\n'
+                str_labels = str(_labelFlag[kind][0]) + '\n'
+            
+            f_imgs.write(str_imgs)
+            f_labels.write(str_labels)
+            if indx + 1 == _labelFlag[kind][1]:
+                kind += 1
+            indx += 1
+    else:
+        pass
 
-    f = open(os.path.join(dirPath, txtName), 'w')
-    indx = 0
-    kind = 0
-    print len(DM.docList)
-    while indx < len(DM.docList):
-        # t_str = os.path.join(dirPath, DM.docList[indx]) + ' ' + str(_labelFlag[kind][0]) + '\n'
-        t_str = DM.docList[indx] + ' ' + str(_labelFlag[kind][0]) + '\n'
-        f.write(t_str)
-        if indx+1 == _labelFlag[kind][1]:
-            kind+=1
-        indx+=1
+
 
 
 def main():
@@ -110,14 +144,14 @@ def main():
 
     # DM = DocManager.DocManager([".jpg"])
     # dirPaths = [
-    #     '/home/yangzheng/testData/BodyDataset/body_28x28/validation',
-    #     '/home/yangzheng/testData/BodyDataset/notBody-28x28/validation',
+    #     '/home/yangzheng/testData/BodyDataset/body/val',
+    #     '/home/yangzheng/testData/BodyDataset/notBody/val',
     # ]
     # DM.DirectoriesMerge(dirPaths, "/home/yangzheng/testData/BodyDataset/validation", [".jpg"])
     # DM.GetDirTree("/home/yangzheng/testData/BodyDataset/training")
     # DM.docList.sort()
-    MakeSamplesText("/home/yangzheng/testData/BodyDataset/train", 'train.txt', ((0, 1201), (1, 2402)))
-    MakeSamplesText("/home/yangzheng/testData/BodyDataset/validation", 'validation.txt', ((0, 191), (1, 382)))
+    MakeSamplesText("/home/yangzheng/testData/BodyDataset/train", 'train', ((0, 1201), (1, 2402)), TEXT_TWO_ABSPATH)
+    MakeSamplesText("/home/yangzheng/testData/BodyDataset/validation", 'validation', ((0, 191), (1, 382)), TEXT_TWO_ABSPATH)
     pass
 
     # MakeSamplesText(dirPath, 'body_train.txt', '0')
